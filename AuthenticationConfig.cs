@@ -17,12 +17,9 @@ namespace UserArrP
         public string Instance { get; set; } = "https://login.microsoftonline.com/{0}";
 
         /// <summary>
-        /// The Tenant is:
-        /// - either the tenant ID of the Azure AD tenant in which this application is registered (a guid)
-        /// or a domain name associated with the tenant
-        /// - or 'organizations' (for a multi-tenant application)
+        /// The tenant ID of the Azure AD tenant in which this application is registered (a guid
         /// </summary>
-        public string Tenant { get; set; }
+        public string TenantId { get; set; }
 
         /// <summary>
         /// Guid used by the application to uniquely identify itself to Azure AD
@@ -36,7 +33,7 @@ namespace UserArrP
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture, Instance, Tenant);
+                return String.Format(CultureInfo.InvariantCulture, Instance, TenantId);
             }
         }
 
@@ -51,24 +48,14 @@ namespace UserArrP
         public string ClientSecret { get; set; }
 
         /// <summary>
-        /// Name of a certificate in the user certificate store
-        /// </summary>
-        /// <remarks>Daemon applications can authenticate with AAD through two mechanisms: ClientSecret
-        /// (which is a kind of application password: the property above)
-        /// or a certificate previously shared with AzureAD during the application registration 
-        /// (and identified by this CertificateName property)
-        /// <remarks> 
-        public string CertificateName { get; set; }
-
-        /// <summary>
         /// Web Api base URL
         /// </summary>
-        public string TodoListBaseAddress { get; set; }
+        public string ArceeApiBaseAddress { get; set; }
 
         /// <summary>
         /// Web Api scope. With client credentials flows, the scopes is ALWAYS of the shape "resource/.default"
         /// </summary>
-        public string TodoListScope { get; set; }
+        public string ArcServerScope { get; set; }
 
         /// <summary>
         /// Reads the configuration from a json file

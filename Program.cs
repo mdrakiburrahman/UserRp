@@ -5,10 +5,8 @@ using Microsoft.Identity.Client;
 using Microsoft.Identity.Client.AppConfig;
 using Microsoft.Identity.Web;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography.X509Certificates; //Only import this if you are using certificate
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
@@ -42,40 +40,27 @@ namespace UserArrP
         {
             AuthenticationConfig config = AuthenticationConfig.ReadFromJsonFile("appsettings.json");
 
-            // You can run this sample using ClientSecret or Certificate. The code will differ only when instantiating the IConfidentialClientApplication
-            bool isUsingClientSecret = AppUsesClientSecret(config);
-
-            // Even if this is a console application here, a daemon application is a confidential client application
+            // The application is a confidential client application
             IConfidentialClientApplication app;
 
-            if (isUsingClientSecret)
-            {
-                app = ConfidentialClientApplicationBuilder.Create(config.ClientId)
+            app = ConfidentialClientApplicationBuilder.Create(config.ClientId)
                     .WithClientSecret(config.ClientSecret)
                     .WithAuthority(new Uri(config.Authority))
                     .WithExperimentalFeatures() // for PoP
                     .Build();
-            }
 
-            else
-            {
-                X509Certificate2 certificate = ReadCertificate(config.CertificateName);
-                app = ConfidentialClientApplicationBuilder.Create(config.ClientId)
-                    .WithCertificate(certificate)
-                    .WithAuthority(new Uri(config.Authority))
-                    .WithExperimentalFeatures()
-                    .Build();
-            }
+            app = ConfidentialClientApplicationBuilder.Create(config.ClientId)
+                .WithClientSecret(config.ClientSecret)
+                .WithAuthority(new Uri(config.Authority))
+                .WithExperimentalFeatures() // for PoP
+                .Build();
 
             app.AddInMemoryTokenCache();
 
-            // With client credentials flows the scopes is ALWAYS of the shape "resource/.default", as the 
-            // application permissions need to be set statically (in the portal or by PowerShell), and then granted by
-            // a tenant administrator
-            string[] scopes = new string[] { config.TodoListScope };
+            string[] scopes = new string[] { config.ArcServerScope };
+            string popUri = $"{config.ArceeApiBaseAddress}";
 
             AuthenticationResult result = null;
-            string popUri = $"{config.TodoListBaseAddress}/api/todolist";
             try
             {
                 result = await app.AcquireTokenForClient(scopes)
@@ -85,12 +70,12 @@ namespace UserArrP
                 Console.WriteLine("Token acquired \n");
                 Console.ResetColor();
             }
-            catch (MsalServiceException ex) when (ex.Message.Contains("AADSTS70011"))
+            catch (MsalServiceException ex)
             {
                 // Invalid scope. The scope has to be of the form "https://resourceurl/.default"
                 // Mitigation: change the scope to be as expected
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Scope provided is not supported");
+                Console.WriteLine(ex.Message);
                 Console.ResetColor();
             }
 
@@ -120,57 +105,6 @@ namespace UserArrP
                 }
                 Console.WriteLine();
             }
-
-        }
-
-        /// <summary>
-        /// Checks if the sample is configured for using ClientSecret or Certificate. This method is just for the sake of this sample.
-        /// You won't need this verification in your production application since you will be authenticating in AAD using one mechanism only.
-        /// </summary>
-        /// <param name="config">Configuration from appsettings.json</param>
-        /// <returns></returns>
-        private static bool AppUsesClientSecret(AuthenticationConfig config)
-        {
-            string clientSecretPlaceholderValue = "[Enter here a client secret for your application]";
-            string certificatePlaceholderValue = "[Or instead of client secret: Enter here the name of a certificate (from the user cert store) as registered with your application]";
-
-            if (!string.IsNullOrWhiteSpace(config.ClientSecret) && config.ClientSecret != clientSecretPlaceholderValue)
-            {
-                return true;
-            }
-
-            else if (!string.IsNullOrWhiteSpace(config.CertificateName) && config.CertificateName != certificatePlaceholderValue)
-            {
-                return false;
-            }
-
-            else
-                throw new Exception("You must choose between using client secret or certificate. Please update appsettings.json file.");
-        }
-
-        private static X509Certificate2 ReadCertificate(string certificateName)
-        {
-            if (string.IsNullOrWhiteSpace(certificateName))
-            {
-                throw new ArgumentException("certificateName should not be empty. Please set the CertificateName setting in the appsettings.json", "certificateName");
-            }
-            X509Certificate2 cert = null;
-
-            using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
-            {
-                store.Open(OpenFlags.ReadOnly);
-                X509Certificate2Collection certCollection = store.Certificates;
-
-                // Find unexpired certificates.
-                X509Certificate2Collection currentCerts = certCollection.Find(X509FindType.FindByTimeValid, DateTime.Now, false);
-
-                // From the collection of unexpired certificates, find the ones with the correct name.
-                X509Certificate2Collection signingCert = currentCerts.Find(X509FindType.FindBySubjectDistinguishedName, certificateName, false);
-
-                // Return the first certificate in the collection, has the right name and is current.
-                cert = signingCert.OfType<X509Certificate2>().OrderByDescending(c => c.NotBefore).FirstOrDefault();
-            }
-            return cert;
         }
     }
 }
