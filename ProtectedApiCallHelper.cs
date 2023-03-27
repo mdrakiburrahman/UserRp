@@ -35,10 +35,9 @@ namespace UserArrP
         /// <param name="webApiUrl">URL of the web API to call (supposed to return Json)</param>
         /// <param name="result">AuthenticationResult returned as a result of the call to the web API.</param>
         /// <param name="processResult">Callback used to process the result of the call to the web API.</param>
-        public async Task CallWebApiAndProcessResultASync(
+        public async Task<JsonNode> CallWebApiAndProcessResultASync(
             string webApiUrl,
-            AuthenticationResult result,
-            Action<JsonNode> processResult)
+            AuthenticationResult result)
         {
             if (result != null)
             {
@@ -47,7 +46,10 @@ namespace UserArrP
                 {
                     HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 }
-                defaultRequestHeaders.Add("Authorization", result.CreateAuthorizationHeader());
+                if (defaultRequestHeaders.Authorization == null)
+                {
+                    defaultRequestHeaders.Add("Authorization", result.CreateAuthorizationHeader());
+                }
 
                 HttpResponseMessage response = await HttpClient.GetAsync(webApiUrl);
                 if (response.IsSuccessStatusCode)
@@ -55,7 +57,7 @@ namespace UserArrP
                     string json = await response.Content.ReadAsStringAsync();
                     JsonNode apiResult = JsonNode.Parse(json);
                     Console.ForegroundColor = ConsoleColor.Gray;
-                    processResult(apiResult);
+                    return apiResult;
                 }
                 else
                 {
@@ -69,6 +71,8 @@ namespace UserArrP
                 }
                 Console.ResetColor();
             }
+
+            return null;
         }
     }
 }

@@ -83,27 +83,47 @@ namespace UserArrP
             {
                 var httpClient = new HttpClient();
                 var apiCaller = new ProtectedApiCallHelper(httpClient);
-                await apiCaller.CallWebApiAndProcessResultASync(popUri, result, Display);
-            }
-        }
 
-        /// <summary>
-        /// Display the result of the Web API call
-        /// </summary>
-        /// <param name="result">Object to display</param>
-        private static void Display(JsonNode result)
-        {
-            Console.WriteLine("Web Api result: \n");
+                // Benchmark
+                //
+                double total_qps = 0;
+                int num_queries = 0;
+                var start_time = DateTime.Now;
 
-            JsonArray nodes = result.AsArray();
-
-            foreach (JsonObject aNode in nodes.ToArray())
-            {
-                foreach (var property in aNode.ToArray())
+                while (true)
                 {
-                    Console.WriteLine($"{property.Key} = {property.Value?.ToString()}");
+
+                    // Send GET request to the API endpoint and get the JSON payload
+                    var apiResult = await apiCaller.CallWebApiAndProcessResultASync(popUri, result);
+
+                    // Calculate the elapsed time for each API call
+                    var elapsed_time = (DateTime.Now - start_time).TotalSeconds;
+
+                    // Calculate the queries per second (QPS) and update the rolling average
+                    var qps = 1 / elapsed_time;
+                    total_qps = (total_qps * num_queries + qps) / (num_queries + 1);
+                    num_queries += 1;
+
+                    // Print the rolling average QPS, server name, and server time
+                    JsonArray nodes = apiResult.AsArray();
+                    var statistics = $"Query: {num_queries}: Average QPS = {total_qps} queries/second";
+
+                    foreach (JsonObject aNode in nodes.ToArray().Cast<JsonObject>())
+                    {
+                        foreach (var property in aNode.ToArray())
+                        {
+                            if (property.Key == "Server Name" || property.Key == "Server Time")
+                            {
+                            
+                                statistics += $" | {property.Key}: {property.Value?.ToString()}";
+                            }
+                        }
+                    }
+                    Console.WriteLine(statistics);
+
+                    // Reset the start time for the next API call
+                    start_time = DateTime.Now;
                 }
-                Console.WriteLine();
             }
         }
     }
