@@ -27,6 +27,26 @@ namespace UserArrP
         public string ClientId { get; set; }
 
         /// <summary>
+        /// Subscription ID of Arc Server
+        /// </summary>
+        public string SubscriptionId { get; set; }
+
+        /// <summary>
+        /// Resource Group of Arc Server
+        /// </summary>
+        public string ResourceGroup { get; set; }
+
+        /// <summary>
+        /// Name of Arc Server
+        /// </summary>
+        public string ArcServerName { get; set; }
+
+        /// <summary>
+        /// MSI Client ID of Arc Server
+        /// </summary>
+        public string ArcServerClientId { get; set; }
+
+        /// <summary>
         /// URL of the authority
         /// </summary>
         public string Authority
@@ -51,11 +71,6 @@ namespace UserArrP
         /// Web Api base URL
         /// </summary>
         public string ArceeApiBaseAddress { get; set; }
-
-        /// <summary>
-        /// Web Api scope. With client credentials flows, the scopes is ALWAYS of the shape "resource/.default"
-        /// </summary>
-        public string ArcServerScope { get; set; }
 
         /// <summary>
         /// Reads the configuration from a json file

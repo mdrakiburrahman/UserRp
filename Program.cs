@@ -38,7 +38,7 @@ namespace UserArrP
 
         private static async Task RunAsync()
         {
-            // This will keep on getting new URLs upon expiry, and trying again
+            // This will keep on generating new Relay URLs upon expiry, and trying again
             //
             while (true)
             {
@@ -69,7 +69,7 @@ namespace UserArrP
                     // - https://ms.portal.azure.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/c579b537-d28b-491a-98b0-fccd193c2d05/appId/5fa47195-e890-485e-a90c-3d417cfcb1e2
                     //   e.g. "5fa47195-e890-485e-a90c-3d417cfcb1e2/.default"
                     //   
-                    string[] scopes = new string[] { config.ArcServerScope };
+                    string[] scopes = new string[] { $"{config.ArcServerClientId}/.default" };
 
                     // This is the short lived Relay URL:
                     //
@@ -121,6 +121,8 @@ namespace UserArrP
                             var qps = 1 / elapsed_time;
                             total_qps = (total_qps * num_queries + qps) / (num_queries + 1);
                             num_queries += 1;
+
+                            // TODO: Print our Relay URL expiry remaining, if we have it
 
                             // Print the rolling average QPS, server name, and server time
                             JsonArray nodes = apiResult.AsArray();
