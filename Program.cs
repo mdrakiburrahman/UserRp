@@ -41,6 +41,7 @@ namespace UserArrP
             AuthenticationConfig config = AuthenticationConfig.ReadFromJsonFile("appsettings.json");
 
             // The application is a confidential client application
+            //
             IConfidentialClientApplication app;
 
             app = ConfidentialClientApplicationBuilder.Create(config.ClientId)
@@ -57,6 +58,11 @@ namespace UserArrP
 
             app.AddInMemoryTokenCache();
 
+            // This is basically the Client ID of the specific Arc Server, visible in AAD:
+            //
+            // - https://ms.portal.azure.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/c579b537-d28b-491a-98b0-fccd193c2d05/appId/5fa47195-e890-485e-a90c-3d417cfcb1e2
+            //   e.g. "5fa47195-e890-485e-a90c-3d417cfcb1e2/.default"
+            //   
             string[] scopes = new string[] { config.ArcServerScope };
             string popUri = $"{config.ArceeApiBaseAddress}";
 
@@ -92,7 +98,6 @@ namespace UserArrP
 
                 while (true)
                 {
-
                     // Send GET request to the API endpoint and get the JSON payload
                     var apiResult = await apiCaller.CallWebApiAndProcessResultASync(popUri, result);
 
