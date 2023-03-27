@@ -47,6 +47,21 @@ namespace UserArrP
         public string ArcServerClientId { get; set; }
 
         /// <summary>
+        /// Location of Arc Server
+        /// </summary>
+        public string ArcServerLocation { get; set; }
+
+        /// <summary>
+        /// Arcee Extension API local endpoint
+        /// </summary>
+        public string ArceeApiUrl { get; set; }
+
+        /// <summary>
+        /// Generated Principal ID Arc Server
+        /// </summary>
+        public string ArcServerprincipalId { get; set; }
+
+        /// <summary>
         /// URL of the authority
         /// </summary>
         public string Authority
