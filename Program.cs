@@ -127,7 +127,7 @@ namespace UserArrP
 
                             // Print the rolling average QPS, server name, and server time
                             JsonArray nodes = apiResult.AsArray();
-                            var statistics = $"[Proxy refresh @{timeRemainingSeconds} s] Query: {num_queries}: Average QPS = {total_qps} queries/second";
+                            var statistics = $"[Proxy refresh in: {timeRemainingSeconds} s] Query: {num_queries}: Average QPS = {total_qps} queries/second";
 
                             foreach (JsonObject aNode in nodes.ToArray().Cast<JsonObject>())
                             {
