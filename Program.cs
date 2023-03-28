@@ -260,7 +260,7 @@ namespace UserArrP
         }
 
         /// <summary>
-        /// Returns an OAuth token for the specified scopes.
+        /// Returns a Proof-of-Possesion (PoP) OAuth token for the specified scopes and url.
         /// </summary>
         private static async Task<AuthenticationResult> GetOAuthToken(AuthenticationConfig config, string[] scopes, bool PoPNeeded, string popUri)
         {
