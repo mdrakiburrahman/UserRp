@@ -112,7 +112,14 @@ namespace UserArrP
 
                     if (result != null)
                     {
-                        var httpClient = new HttpClient();
+                        // Disable SSL validation
+                        //
+                        var handler = new HttpClientHandler()
+                        {
+                            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                        };
+                        var httpClient = new HttpClient(handler);
+
                         var apiCaller = new ProtectedApiCallHelper(httpClient);
 
                         // Benchmark
@@ -164,7 +171,15 @@ namespace UserArrP
                 catch (Exception ex)
                 {
                     Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("============ MESSAGE ===========");
                     Console.WriteLine(ex.Message);
+                    Console.WriteLine();
+                    Console.WriteLine("============ INNER EXCEPTION ===========");
+                    Console.WriteLine(ex.InnerException);
+                    Console.WriteLine();
+                    Console.WriteLine("============ STACK TRACE ===========");
+                    Console.WriteLine(ex.StackTrace);
+                    Console.WriteLine();
                     Console.ResetColor();
                 }
             }
