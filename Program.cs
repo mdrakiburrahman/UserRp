@@ -50,6 +50,11 @@ namespace UserArrP
         private const string HybridConnectivityManagementEndpoint = @"https://management.azure.com/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.HybridCompute/machines/{2}/providers/Microsoft.HybridConnectivity/endpoints/default/listCredentials?api-version={3}";
 
         /// <summary>
+        /// Arc Server Resource ID
+        /// </summary>
+        private const string ArcServerResourceId = @"/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.HybridCompute/machines/{2}";
+
+        /// <summary>
         /// SNI Proxy URI
         /// </summary>
         private const string SniProxyEndpoint = @"https://control.{0}.arc.wac.azure.com:47011/sni/register?api-version=2022-05-01";
@@ -112,11 +117,27 @@ namespace UserArrP
 
                     if (result != null)
                     {
-                        // Disable SSL validation
+                        // SSL validation - checks the certificate is from our Arc Server
                         //
                         var handler = new HttpClientHandler()
                         {
-                            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                            ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) =>
+                            {
+                                if (cert != null && cert.SubjectName.Name != null)
+                                {
+                                    var receivedCommonName = cert.SubjectName.Name.Split('=').LastOrDefault()?.Trim();
+                                    string expectedCommonName = string.Format(ArcServerResourceId, config.SubscriptionId, config.ResourceGroup, config.ArcServerName);
+                                    if (receivedCommonName == expectedCommonName)
+                                    {
+                                        // We're talking to Arcee Extension API
+                                        //
+                                        return true;
+                                    }
+                                }
+                                // The certificate is not what we expected - do not allow the call to proceed
+                                //
+                                return false;
+                            }
                         };
                         var httpClient = new HttpClient(handler);
 
