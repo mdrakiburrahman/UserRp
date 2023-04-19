@@ -15,6 +15,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using System.IO;
 
 
 /*
@@ -57,7 +59,7 @@ namespace UserArrP
         /// <summary>
         /// SNI Proxy URI
         /// </summary>
-        private const string SniProxyEndpoint = @"https://control.{0}.arc.wac.azure.com:47011/sni/register?api-version=2022-05-01";
+        private const string SniProxyEndpoint = "http://localhost:47010/sni/register?api-version=2022-05-01";
 
         /// <summary>
         /// Arc Server Hostname FQDN format
@@ -100,7 +102,16 @@ namespace UserArrP
             {
                 try
                 {
+                    // Get config from file
+                    //
                     AuthenticationConfig config = AuthenticationConfig.ReadFromJsonFile("appsettings.json");
+
+                    // Start Proxy - required for local debugging
+                    //
+                    string binaryPath = Path.Combine(config.PathToProxy, "sniproxy.exe");
+                    string configPath = Path.Combine(config.PathToProxy, "sniproxy.conf");
+                    string arguments = $"-c {configPath}";
+                    await StartProcessAsync(binaryPath, arguments);
 
                     JObject proxyUrlObject = await GetRelayUrlAsync(config);
                     string popUri = proxyUrlObject["proxy"].ToString();
@@ -250,7 +261,7 @@ namespace UserArrP
                 serviceConfig = new ServiceConfig
                 {
                     service = ArceeApiUrl,
-                    hostname = string.Format(ArcServerHostNameFqdn, ArcServerprincipalId, ArcServerLocation)
+                    hostname = "localhost"
                 },
                 relay = new Relay
                 {
@@ -360,6 +371,19 @@ namespace UserArrP
                 Console.ResetColor();
             }
             return result;
+        }
+
+        /// <summary>
+        /// Start a process async with arguments.
+        /// </summary>
+        static async Task StartProcessAsync(string binaryPath, string arguments)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo(binaryPath, arguments);
+            startInfo.UseShellExecute = false;
+
+            Process process = new Process();
+            process.StartInfo = startInfo;
+            process.Start();
         }
     }
 }

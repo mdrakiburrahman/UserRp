@@ -52,6 +52,11 @@ namespace UserArrP
         public string ArcServerLocation { get; set; }
 
         /// <summary>
+        /// Location of SNIProxy and config file
+        /// </summary>
+        public string PathToProxy { get; set; }
+
+        /// <summary>
         /// Arcee Extension API local endpoint
         /// </summary>
         public string ArceeApiUrl { get; set; }
