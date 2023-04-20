@@ -32,11 +32,10 @@ namespace UserArrP
         /// <summary>
         /// Calls the protected web API and processes the result
         /// </summary>
-        /// <param name="webApiUrl">URL of the web API to call (supposed to return Json)</param>
-        /// <param name="result">AuthenticationResult returned as a result of the call to the web API.</param>
+        /// <param name="request">Request Object</param>
         /// <param name="processResult">Callback used to process the result of the call to the web API.</param>
         public async Task<JsonNode> CallWebApiAndProcessResultASync(
-            string webApiUrl,
+            HttpRequestMessage request,
             AuthenticationResult result)
         {
             if (result != null)
@@ -51,7 +50,7 @@ namespace UserArrP
                     defaultRequestHeaders.Add("Authorization", result.CreateAuthorizationHeader());
                 }
 
-                HttpResponseMessage response = await HttpClient.GetAsync(webApiUrl);
+                HttpResponseMessage response = await HttpClient.SendAsync(request);
                 if (response.IsSuccessStatusCode)
                 {
                     string json = await response.Content.ReadAsStringAsync();

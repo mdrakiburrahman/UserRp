@@ -62,11 +62,6 @@ namespace UserArrP
         private const string SniProxyEndpoint = "http://localhost:47010/sni/register?api-version=2022-05-01";
 
         /// <summary>
-        /// Arc Server Hostname FQDN format
-        /// </summary>
-        private const string ArcServerHostNameFqdn = @"{0}.{1}.arc.waconazure.com";
-
-        /// <summary>
         /// Management Endpoint
         /// </summary>
         private const string ManagementEndpoint = "https://management.azure.com";
@@ -96,26 +91,40 @@ namespace UserArrP
         /// </summary>
         private static async Task RunAsync()
         {
+            // Get config from file
+            //
+            AuthenticationConfig config = AuthenticationConfig.ReadFromJsonFile("appsettings.json");
+
+            // Start Proxy once - required for local debugging
+            //
+            string binaryPath = Path.Combine(config.PathToProxy, "sniproxy.exe");
+            string configPath = Path.Combine(config.PathToProxy, "sniproxy.conf");
+            string arguments = $"-c {configPath}";
+            await StartProcessAsync(binaryPath, arguments);
+
             // This will keep on generating new Relay URLs upon expiry, and trying again
             //
             while (true)
             {
                 try
                 {
-                    // Get config from file
+                    // Generate Relay URL from SNI Proxy
                     //
-                    AuthenticationConfig config = AuthenticationConfig.ReadFromJsonFile("appsettings.json");
-
-                    // Start Proxy - required for local debugging
-                    //
-                    string binaryPath = Path.Combine(config.PathToProxy, "sniproxy.exe");
-                    string configPath = Path.Combine(config.PathToProxy, "sniproxy.conf");
-                    string arguments = $"-c {configPath}";
-                    await StartProcessAsync(binaryPath, arguments);
-
                     JObject proxyUrlObject = await GetRelayUrlAsync(config);
-                    string popUri = proxyUrlObject["proxy"].ToString();
+                    string fullUri= proxyUrlObject["proxy"].ToString();
                     int expiresOn = (int)proxyUrlObject["expiresOn"];
+
+                    // Dotnet cannot use localhost subdomains, so we must trim out the host header SNI Proxy expects
+                    //
+                    var hostHeader = fullUri.Split('/')[2].Split(':')[0];
+                    var port = fullUri.Split('/')[2].Split(':')[1];
+
+                    Console.WriteLine($"--------------------------------------");
+                    Console.WriteLine($"Full URI: {fullUri}");
+                    Console.WriteLine($"Host Header: {hostHeader}");
+                    Console.WriteLine($"Port: {port}");
+                    Console.WriteLine($"Expires On: {expiresOn}");
+                    Console.WriteLine($"--------------------------------------");
 
                     // This is basically the Client ID of the specific Arc Server, visible in AAD:
                     //
@@ -124,7 +133,7 @@ namespace UserArrP
                     //   
                     string[] scopes = new string[] { $"{config.ArcServerClientId}/.default" };
 
-                    AuthenticationResult result = await GetOAuthToken(config, scopes, true, popUri);
+                    AuthenticationResult result = await GetOAuthToken(config, scopes, true, fullUri);
 
                     if (result != null)
                     {
@@ -151,7 +160,6 @@ namespace UserArrP
                             }
                         };
                         var httpClient = new HttpClient(handler);
-
                         var apiCaller = new ProtectedApiCallHelper(httpClient);
 
                         // Benchmark
@@ -164,8 +172,12 @@ namespace UserArrP
                         //
                         while (true)
                         {
+                            // Construct new request object, these cannot be reused
+                            var request = new HttpRequestMessage(HttpMethod.Get, $"https://localhost:{port}");
+                            request.Headers.Host = hostHeader;
+
                             // Send GET request to the API endpoint and get the JSON payload
-                            var apiResult = await apiCaller.CallWebApiAndProcessResultASync(popUri, result);
+                            var apiResult = await apiCaller.CallWebApiAndProcessResultASync(request, result);
 
                             // Calculate the elapsed time for each API call
                             var elapsed_time = (DateTime.Now - start_time).TotalSeconds;
@@ -218,9 +230,9 @@ namespace UserArrP
         }
 
         /// <summary>
-        /// Generates a new Relay URL and returns it:
+        /// Generates a new Relay URL from the local SNI Proxy and returns it:
         ///
-        ///  e.g. "https://68d3eb8a77c95a7acf97c4d61c0fe84e.c579b537-d28b-491a-98b0-fccd193c2d05.eastus.arc.waconazure.com:6443"
+        ///  e.g. "https://0fba8dc65ef4edcbfc83717a269dd5bc.localhost:8443"
         ///
         /// </summary>
         private static async Task<JObject> GetRelayUrlAsync(AuthenticationConfig config)
