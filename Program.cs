@@ -191,9 +191,11 @@ namespace UserArrP
                             var timeRemainingSeconds = expiresOn - DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
                             // Print the rolling average QPS, server name, and server time
-                            JsonArray nodes = apiResult.AsArray();
                             var statistics = $"[Proxy refresh in: {timeRemainingSeconds} s] Query: {num_queries}: Average QPS = {total_qps} queries/second";
 
+                            // =================== Random SQL Query ===================
+                            /*
+                            JsonArray nodes = apiResult.AsArray();
                             foreach (JsonObject aNode in nodes.ToArray().Cast<JsonObject>())
                             {
                                 foreach (var property in aNode.ToArray())
@@ -205,6 +207,12 @@ namespace UserArrP
                                     }
                                 }
                             }
+                            */
+                            // =================== Random SQL Query ===================
+                            // =================== GET sqlServerInstance ===================
+                            string nameKey = "name";
+                            statistics += $" | {nameKey}: {apiResult[nameKey]?.ToString()}";
+                            // =================== GET sqlServerInstance ===================
                             Console.WriteLine(statistics);
 
                             // Reset the start time for the next API call
