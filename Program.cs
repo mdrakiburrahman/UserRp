@@ -18,17 +18,16 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO;
 
-
 /*
- * 
+ *
  ██ ██ █████  █████  █████████  ██████████ ███████████      ███████████   ███████████  ██ ██
 ░██░██░░███  ░░███  ███░░░░░███░░███░░░░░█░░███░░░░░███    ░░███░░░░░███ ░░███░░░░░███░██░██
-░░ ░░  ░███   ░███ ░███    ░░░  ░███  █ ░  ░███    ░███     ░███    ░███  ░███    ░███░░ ░░ 
-       ░███   ░███ ░░█████████  ░██████    ░██████████      ░██████████   ░██████████       
-       ░███   ░███  ░░░░░░░░███ ░███░░█    ░███░░░░░███     ░███░░░░░███  ░███░░░░░░        
-       ░███   ░███  ███    ░███ ░███ ░   █ ░███    ░███     ░███    ░███  ░███              
-       ░░████████  ░░█████████  ██████████ █████   █████    █████   █████ █████             
-        ░░░░░░░░    ░░░░░░░░░  ░░░░░░░░░░ ░░░░░   ░░░░░    ░░░░░   ░░░░░ ░░░░░    
+░░ ░░  ░███   ░███ ░███    ░░░  ░███  █ ░  ░███    ░███     ░███    ░███  ░███    ░███░░ ░░
+       ░███   ░███ ░░█████████  ░██████    ░██████████      ░██████████   ░██████████
+       ░███   ░███  ░░░░░░░░███ ░███░░█    ░███░░░░░███     ░███░░░░░███  ░███░░░░░░
+       ░███   ░███  ███    ░███ ░███ ░   █ ░███    ░███     ░███    ░███  ░███
+       ░░████████  ░░█████████  ██████████ █████   █████    █████   █████ █████
+        ░░░░░░░░    ░░░░░░░░░  ░░░░░░░░░░ ░░░░░   ░░░░░    ░░░░░   ░░░░░ ░░░░░
 *
 */
 
@@ -49,17 +48,20 @@ namespace UserArrP
         /// <summary>
         /// Microsoft.HybridConnectivity Management URI
         /// </summary>
-        private const string HybridConnectivityManagementEndpoint = @"https://management.azure.com/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.HybridCompute/machines/{2}/providers/Microsoft.HybridConnectivity/endpoints/default/listCredentials?api-version={3}";
+        private const string HybridConnectivityManagementEndpoint =
+            @"https://management.azure.com/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.HybridCompute/machines/{2}/providers/Microsoft.HybridConnectivity/endpoints/default/listCredentials?api-version={3}";
 
         /// <summary>
         /// Arc Server Resource ID
         /// </summary>
-        private const string ArcServerResourceId = @"/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.HybridCompute/machines/{2}";
+        private const string ArcServerResourceId =
+            @"/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.HybridCompute/machines/{2}";
 
         /// <summary>
         /// SNI Proxy URI
         /// </summary>
-        private const string SniProxyEndpoint = "http://localhost:47010/sni/register?api-version=2022-05-01";
+        private const string SniProxyEndpoint =
+            "http://localhost:47010/sni/register?api-version=2022-05-01";
 
         /// <summary>
         /// Management Endpoint
@@ -111,7 +113,7 @@ namespace UserArrP
                     // Generate Relay URL from SNI Proxy
                     //
                     JObject proxyUrlObject = await GetRelayUrlAsync(config);
-                    string fullUri= proxyUrlObject["proxy"].ToString();
+                    string fullUri = proxyUrlObject["proxy"].ToString();
                     int expiresOn = (int)proxyUrlObject["expiresOn"];
 
                     // Dotnet cannot use localhost subdomains, so we must trim out the host header SNI Proxy expects
@@ -130,11 +132,18 @@ namespace UserArrP
                     //
                     // - https://ms.portal.azure.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/c579b537-d28b-491a-98b0-fccd193c2d05/appId/5fa47195-e890-485e-a90c-3d417cfcb1e2
                     //   e.g. "5fa47195-e890-485e-a90c-3d417cfcb1e2/.default"
-                    //   
+                    //
                     string[] scopes = new string[] { $"{config.ArcServerClientId}/.default" };
-                    string path = $"/subscriptions/{config.SubscriptionId}/resourceGroups/{config.ResourceGroup}/providers/Microsoft.AzureArcData/sqlServerInstances/{config.ArcServerName}";
+                    string path =
+                        $"/subscriptions/{config.SubscriptionId}/resourceGroups/{config.ResourceGroup}/providers/Microsoft.AzureArcData/sqlServerInstances/{config.ArcServerName}";
 
-                    AuthenticationResult result = await GetOAuthToken(config, scopes, true, config.ArceeApiUrl, "GET");
+                    AuthenticationResult result = await GetOAuthToken(
+                        config,
+                        scopes,
+                        true,
+                        config.ArceeApiUrl,
+                        "GET"
+                    );
 
                     if (result != null)
                     {
@@ -142,12 +151,25 @@ namespace UserArrP
                         //
                         var handler = new HttpClientHandler()
                         {
-                            ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) =>
+                            ServerCertificateCustomValidationCallback = (
+                                sender,
+                                cert,
+                                chain,
+                                sslPolicyErrors
+                            ) =>
                             {
                                 if (cert != null && cert.SubjectName.Name != null)
                                 {
-                                    var receivedCommonName = cert.SubjectName.Name.Split('=').LastOrDefault()?.Trim();
-                                    string expectedCommonName = string.Format(ArcServerResourceId, config.SubscriptionId, config.ResourceGroup, config.ArcServerName);
+                                    var receivedCommonName = cert.SubjectName.Name
+                                        .Split('=')
+                                        .LastOrDefault()
+                                        ?.Trim();
+                                    string expectedCommonName = string.Format(
+                                        ArcServerResourceId,
+                                        config.SubscriptionId,
+                                        config.ResourceGroup,
+                                        config.ArcServerName
+                                    );
                                     if (receivedCommonName == expectedCommonName)
                                     {
                                         // We're talking to Arcee Extension API
@@ -174,11 +196,17 @@ namespace UserArrP
                         while (true)
                         {
                             // Construct new request object, these cannot be reused
-                            var request = new HttpRequestMessage(HttpMethod.Get, $"https://localhost:{port}");
+                            var request = new HttpRequestMessage(
+                                HttpMethod.Get,
+                                $"https://localhost:{port}"
+                            );
                             request.Headers.Host = hostHeader;
 
                             // Send GET request to the API endpoint and get the JSON payload
-                            var apiResult = await apiCaller.CallWebApiAndProcessResultASync(request, result);
+                            var apiResult = await apiCaller.CallWebApiAndProcessResultASync(
+                                request,
+                                result
+                            );
 
                             // Calculate the elapsed time for each API call
                             var elapsed_time = (DateTime.Now - start_time).TotalSeconds;
@@ -189,10 +217,12 @@ namespace UserArrP
                             num_queries += 1;
 
                             // Calculate time remaining on the Relay URL
-                            var timeRemainingSeconds = expiresOn - DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                            var timeRemainingSeconds =
+                                expiresOn - DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
                             // Print the rolling average QPS, server name, and server time
-                            var statistics = $"[Proxy refresh in: {timeRemainingSeconds} s] Query: {num_queries}: Average QPS = {total_qps} queries/second";
+                            var statistics =
+                                $"[Proxy refresh in: {timeRemainingSeconds} s] Query: {num_queries}: Average QPS = {total_qps} queries/second";
 
                             // =================== Random SQL Query ===================
                             /*
@@ -255,17 +285,27 @@ namespace UserArrP
 
             // Turn off SSL validation on the HttpClient, for the SNI Proxy which will be local in our case
             var httpClientHandler = new HttpClientHandler();
-            httpClientHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-            var httpClient = new HttpClient(httpClientHandler);            
+            httpClientHandler.ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            var httpClient = new HttpClient(httpClientHandler);
 
             // Get token against Management Endpoint
             string[] scopes = new string[] { $"{ManagementEndpoint}/.default" };
             AuthenticationResult result = await GetOAuthToken(config, scopes, false, "", "");
 
             // Get new Relay Credentials
-            string requestUrl = string.Format(HybridConnectivityManagementEndpoint, SubscriptionId, ResourceGroup, ArcServerName, HybridConnectivityApiVersion);
+            string requestUrl = string.Format(
+                HybridConnectivityManagementEndpoint,
+                SubscriptionId,
+                ResourceGroup,
+                ArcServerName,
+                HybridConnectivityApiVersion
+            );
             var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.AccessToken);
+            request.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                result.AccessToken
+            );
             request.Content = new StringContent(string.Empty, Encoding.UTF8, "application/json");
             var response = await httpClient.SendAsync(request);
             string responseContent = await response.Content.ReadAsStringAsync();
@@ -279,11 +319,7 @@ namespace UserArrP
             var relayJObject = JsonConvert.DeserializeObject<JObject>(responseContent)["relay"];
             var sniRequestBody = new SniRequestBody
             {
-                serviceConfig = new ServiceConfig
-                {
-                    service = ArceeApiUrl,
-                    hostname = "localhost"
-                },
+                serviceConfig = new ServiceConfig { service = ArceeApiUrl, hostname = "localhost" },
                 relay = new Relay
                 {
                     namespaceName = relayJObject["namespaceName"].ToString(),
@@ -298,7 +334,11 @@ namespace UserArrP
             // Get new Relay URL
             requestUrl = string.Format(SniProxyEndpoint, ArcServerLocation);
             request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
-            request.Content = new StringContent(sniRequestBodyJson, Encoding.UTF8, "application/json");
+            request.Content = new StringContent(
+                sniRequestBodyJson,
+                Encoding.UTF8,
+                "application/json"
+            );
             try
             {
                 response = await httpClient.SendAsync(request);
@@ -308,7 +348,7 @@ namespace UserArrP
                 Console.WriteLine(ex.ToString());
                 throw new Exception($"Error getting Relay URL from Credentials: {ex.Message}");
             }
-            
+
             responseContent = await response.Content.ReadAsStringAsync();
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
             {
@@ -344,13 +384,20 @@ namespace UserArrP
         /// <summary>
         /// Returns a Proof-of-Possesion (PoP) OAuth token for the specified scopes and url.
         /// </summary>
-        private static async Task<AuthenticationResult> GetOAuthToken(AuthenticationConfig config, string[] scopes, bool PoPNeeded, string host, string verb = "")
+        private static async Task<AuthenticationResult> GetOAuthToken(
+            AuthenticationConfig config,
+            string[] scopes,
+            bool PoPNeeded,
+            string host,
+            string verb = ""
+        )
         {
             // The application is a confidential client application
             //
             IConfidentialClientApplication app;
 
-            app = ConfidentialClientApplicationBuilder.Create(config.ClientId)
+            app = ConfidentialClientApplicationBuilder
+                .Create(config.ClientId)
                 .WithClientSecret(config.ClientSecret)
                 .WithAuthority(new Uri(config.Authority))
                 .WithExperimentalFeatures() // for PoP
@@ -363,7 +410,9 @@ namespace UserArrP
             {
                 if (PoPNeeded)
                 {
-                    PoPAuthenticationConfiguration popConfig = new PoPAuthenticationConfiguration(new Uri(host));
+                    PoPAuthenticationConfiguration popConfig = new PoPAuthenticationConfiguration(
+                        new Uri(host)
+                    );
                     popConfig.Nonce = "nonce";
 
                     // TODO: Configure other best practices, see:
@@ -392,8 +441,8 @@ namespace UserArrP
                         default:
                             popConfig.HttpMethod = HttpMethod.Get;
                             break;
-                    }   
-                    
+                    }
+
                     result = await app.AcquireTokenForClient(scopes)
                         .WithProofOfPossession(popConfig)
                         .ExecuteAsync()

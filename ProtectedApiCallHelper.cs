@@ -28,7 +28,6 @@ namespace UserArrP
 
         protected HttpClient HttpClient { get; private set; }
 
-
         /// <summary>
         /// Calls the protected web API and processes the result
         /// </summary>
@@ -36,14 +35,20 @@ namespace UserArrP
         /// <param name="processResult">Callback used to process the result of the call to the web API.</param>
         public async Task<JsonNode> CallWebApiAndProcessResultASync(
             HttpRequestMessage request,
-            AuthenticationResult result)
+            AuthenticationResult result
+        )
         {
             if (result != null)
             {
                 var defaultRequestHeaders = HttpClient.DefaultRequestHeaders;
-                if (defaultRequestHeaders.Accept == null || !defaultRequestHeaders.Accept.Any(m => m.MediaType == "application/json"))
+                if (
+                    defaultRequestHeaders.Accept == null
+                    || !defaultRequestHeaders.Accept.Any(m => m.MediaType == "application/json")
+                )
                 {
-                    HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    HttpClient.DefaultRequestHeaders.Accept.Add(
+                        new MediaTypeWithQualityHeaderValue("application/json")
+                    );
                 }
                 if (defaultRequestHeaders.Authorization == null)
                 {

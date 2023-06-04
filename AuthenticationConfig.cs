@@ -71,10 +71,7 @@ namespace UserArrP
         /// </summary>
         public string Authority
         {
-            get
-            {
-                return String.Format(CultureInfo.InvariantCulture, Instance, TenantId);
-            }
+            get { return String.Format(CultureInfo.InvariantCulture, Instance, TenantId); }
         }
 
         /// <summary>
@@ -82,9 +79,9 @@ namespace UserArrP
         /// </summary>
         /// <remarks>Daemon applications can authenticate with AAD through two mechanisms: ClientSecret
         /// (which is a kind of application password: this property)
-        /// or a certificate previously shared with AzureAD during the application registration 
+        /// or a certificate previously shared with AzureAD during the application registration
         /// (and identified by the CertificateName property belows)
-        /// <remarks> 
+        /// <remarks>
         public string ClientSecret { get; set; }
 
         /// <summary>
@@ -102,15 +99,11 @@ namespace UserArrP
             IConfigurationRoot Configuration;
 
             var builder = new ConfigurationBuilder()
-             .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile(path);
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile(path);
 
             Configuration = builder.Build();
             return Configuration.Get<AuthenticationConfig>();
         }
     }
-
-
-
 }
-
