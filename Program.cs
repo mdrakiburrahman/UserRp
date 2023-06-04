@@ -148,7 +148,7 @@ namespace UserArrP
                     // fields.
                     //
                     string queryPath = string.Format(
-                        ArcSqlServerResourceId.TrimStart('/'),
+                        ArcSqlServerResourceId,
                         config.SubscriptionId,
                         config.ResourceGroup,
                         config.ArcServerName
@@ -223,7 +223,7 @@ namespace UserArrP
                             // Construct new request object, these cannot be reused
                             var request = new HttpRequestMessage(
                                 HttpMethod.Get,
-                                $"https://localhost:{port}/{queryPath}"
+                                $"https://localhost:{port}/{queryPath.TrimStart('/')}"
                             );
                             request.Headers.Host = hostHeader;
 
@@ -435,6 +435,7 @@ namespace UserArrP
                 .Create(config.ClientId)
                 .WithClientSecret(config.ClientSecret)
                 .WithAuthority(new Uri(config.Authority))
+                .WithExperimentalFeatures() // for PoP
                 .Build();
 
             app.AddInMemoryTokenCache();
