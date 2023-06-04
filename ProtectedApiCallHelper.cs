@@ -23,7 +23,7 @@ namespace UserArrP
         private const string popHeader = "Authorization-POP";
 
         /// <summary>
-        /// POP Token header
+        /// PAS Token header
         /// </summary>
         private const string pasHeader = "Authorization-PAS";
 
