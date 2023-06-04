@@ -74,11 +74,6 @@ namespace UserArrP
         private const string PasEndpoint = "https://pas.windows.net";
 
         /// <summary>
-        /// The Arc Data authorization header has "POP;PAS| tag instead of the usual "Bearer".
-        /// </summary>
-        public const string PoPPasTokenTag = "POP;PAS|";
-
-        /// <summary>
         /// Main entrypoint.
         /// </summary>
         static void Main(string[] args)
@@ -166,11 +161,6 @@ namespace UserArrP
 
                     if (PopResult != null && PasResult != null)
                     {
-                        // Construct PoP + PaS token
-                        //
-                        string popPasToken =
-                            $"{PoPPasTokenTag}POP {PopResult.AccessToken}{";"}PAS {PasResult.AccessToken}";
-
                         // SSL validation - checks the certificate is from our Arc Server
                         //
                         var handler = new HttpClientHandler()
@@ -229,7 +219,8 @@ namespace UserArrP
                             // Send GET request to the API endpoint and get the JSON payload
                             var apiResult = await apiCaller.CallWebApiAndProcessResultASync(
                                 request,
-                                popPasToken
+                                PopResult.AccessToken,
+                                PasResult.AccessToken
                             );
 
                             // Calculate the elapsed time for each API call

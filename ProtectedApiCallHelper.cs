@@ -32,13 +32,15 @@ namespace UserArrP
         /// Calls the protected web API and processes the result
         /// </summary>
         /// <param name="request">Request Object</param>
-        /// <param name="token">Pre-formatted header token</param>
+        /// <param name="popToken">Proof of possession token</param>
+        /// <param name="pasToken">Policy Administration Service token</param>
         public async Task<JsonNode> CallWebApiAndProcessResultASync(
             HttpRequestMessage request,
-            string token
+            string popToken,
+            string pasToken
         )
         {
-            if (token != null)
+            if (popToken != null && pasToken != null)
             {
                 var defaultRequestHeaders = HttpClient.DefaultRequestHeaders;
                 if (
@@ -50,10 +52,9 @@ namespace UserArrP
                         new MediaTypeWithQualityHeaderValue("application/json")
                     );
                 }
-                if (defaultRequestHeaders.Authorization == null)
-                {
-                    defaultRequestHeaders.Add("Authorization", token);
-                }
+
+                defaultRequestHeaders.Add("Authorization-POP", popToken);
+                defaultRequestHeaders.Add("Authorization-PAS", pasToken);
 
                 HttpResponseMessage response = await HttpClient.SendAsync(request);
                 if (response.IsSuccessStatusCode)
@@ -68,9 +69,6 @@ namespace UserArrP
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"Failed to call the Web Api: {response.StatusCode}");
                     string content = await response.Content.ReadAsStringAsync();
-
-                    // Note that if you got reponse.Code == 403 and response.content.code == "Authorization_RequestDenied"
-                    // this is because the tenant admin as not granted consent for the application to call the Web API
                     Console.WriteLine($"Content: {content}");
                 }
                 Console.ResetColor();
