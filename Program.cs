@@ -435,7 +435,7 @@ namespace UserArrP
                     PoPAuthenticationConfiguration popConfig = new PoPAuthenticationConfiguration(
                         new Uri(host)
                     );
-                    popConfig.Nonce = Guid.NewGuid().ToString().Replace("-", "");
+                    popConfig.Nonce = Guid.NewGuid().ToString();
 
                     // TODO: Configure other best practices, see:
                     //
