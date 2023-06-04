@@ -133,14 +133,11 @@ namespace UserArrP
                     Console.WriteLine($"Expires On: {expiresOn}");
                     Console.WriteLine($"--------------------------------------");
 
-                    // This is basically the Client ID of the specific Arc Server, visible in AAD:
+                    // If you look in the JWT, PoP Tokens do not have an aud field, this is only included
+                    // just for MSAL SDK syntax. The actual validation of the PoP Token will be done by
+                    // Extension API by validating individual PoP specific fields.
                     //
-                    // - https://ms.portal.azure.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/c579b537-d28b-491a-98b0-fccd193c2d05/appId/5fa47195-e890-485e-a90c-3d417cfcb1e2
-                    //   e.g. "5fa47195-e890-485e-a90c-3d417cfcb1e2/.default"
-                    //
-                    string[] scopes = new string[] { $"{config.ArcServerprincipalId}/.default" };
-                    string path =
-                        $"/subscriptions/{config.SubscriptionId}/resourceGroups/{config.ResourceGroup}/providers/Microsoft.AzureArcData/sqlServerInstances/{config.ArcServerName}";
+                    string[] scopes = new string[] { $"https://localhost/.default" };
 
                     // Token: PoP Token - for Extension API AuthN
                     //
