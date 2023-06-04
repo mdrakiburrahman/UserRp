@@ -422,7 +422,6 @@ namespace UserArrP
                 .Create(config.ClientId)
                 .WithClientSecret(config.ClientSecret)
                 .WithAuthority(new Uri(config.Authority))
-                .WithExperimentalFeatures() // for PoP
                 .Build();
 
             app.AddInMemoryTokenCache();
