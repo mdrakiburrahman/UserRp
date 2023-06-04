@@ -69,6 +69,11 @@ namespace UserArrP
         private const string ManagementEndpoint = "https://management.azure.com";
 
         /// <summary>
+        /// Policy Administration Service Endpoint for AuthZ/RBAC
+        /// </summary>
+        private const string PasEndpoint = "https://pas.windows.net";
+
+        /// <summary>
         /// Main entrypoint.
         /// </summary>
         static void Main(string[] args)
@@ -133,10 +138,12 @@ namespace UserArrP
                     // - https://ms.portal.azure.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/c579b537-d28b-491a-98b0-fccd193c2d05/appId/5fa47195-e890-485e-a90c-3d417cfcb1e2
                     //   e.g. "5fa47195-e890-485e-a90c-3d417cfcb1e2/.default"
                     //
-                    string[] scopes = new string[] { $"{config.ArcServerClientId}/.default" };
+                    string[] scopes = new string[] { $"{config.ArcServerprincipalId}/.default" };
                     string path =
                         $"/subscriptions/{config.SubscriptionId}/resourceGroups/{config.ResourceGroup}/providers/Microsoft.AzureArcData/sqlServerInstances/{config.ArcServerName}";
 
+                    // Token: PoP Token - for Extension API AuthN
+                    //
                     AuthenticationResult result = await GetOAuthToken(
                         config,
                         scopes,
@@ -289,7 +296,7 @@ namespace UserArrP
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
             var httpClient = new HttpClient(httpClientHandler);
 
-            // Get token against Management Endpoint
+            // Token: Management Endpoint - for getting Relay Credentials
             string[] scopes = new string[] { $"{ManagementEndpoint}/.default" };
             AuthenticationResult result = await GetOAuthToken(config, scopes, false, "", "");
 
