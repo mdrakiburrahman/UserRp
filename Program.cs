@@ -133,9 +133,11 @@ namespace UserArrP
                     Console.WriteLine($"Expires On: {expiresOn}");
                     Console.WriteLine($"--------------------------------------");
 
-                    // If you look in the JWT, PoP Tokens do not have an aud field, this is only included
-                    // just for MSAL SDK syntax. The actual validation of the PoP Token will be done by
-                    // Extension API by validating individual PoP specific fields.
+                    // If you look in the JWT, PoP Tokens do not have an aud
+                    // field, this is only included just for MSAL SDK syntax.
+                    // The actual validation of the PoP Token will be done by
+                    // Extension API by validating individual PoP specific
+                    // fields.
                     //
                     string[] scopes = new string[] { $"https://localhost/.default" };
 
