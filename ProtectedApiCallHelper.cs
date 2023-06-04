@@ -18,6 +18,16 @@ namespace UserArrP
     public class ProtectedApiCallHelper
     {
         /// <summary>
+        /// POP Token header
+        /// </summary>
+        private const string popHeader = "Authorization-POP";
+
+        /// <summary>
+        /// POP Token header
+        /// </summary>
+        private const string pasHeader = "Authorization-PAS";
+
+        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="httpClient">HttpClient used to call the protected API</param>
@@ -53,8 +63,8 @@ namespace UserArrP
                     );
                 }
 
-                defaultRequestHeaders.Add("Authorization-POP", popToken);
-                defaultRequestHeaders.Add("Authorization-PAS", pasToken);
+                if (!defaultRequestHeaders.Contains(popHeader)) defaultRequestHeaders.Add(popHeader, popToken);
+                if (!defaultRequestHeaders.Contains(pasHeader)) defaultRequestHeaders.Add(pasHeader, pasToken);
 
                 HttpResponseMessage response = await HttpClient.SendAsync(request);
                 if (response.IsSuccessStatusCode)
