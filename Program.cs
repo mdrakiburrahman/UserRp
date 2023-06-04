@@ -74,6 +74,11 @@ namespace UserArrP
         private const string PasEndpoint = "https://pas.windows.net";
 
         /// <summary>
+        /// The Arc Data authorization header has "POP;PAS| tag instead of the usual "Bearer".
+        /// </summary>
+        public const string PoPPasTokenTag = "POP;PAS|";
+
+        /// <summary>
         /// Main entrypoint.
         /// </summary>
         static void Main(string[] args)
@@ -133,26 +138,39 @@ namespace UserArrP
                     Console.WriteLine($"Expires On: {expiresOn}");
                     Console.WriteLine($"--------------------------------------");
 
+                    // Token: PoP Token - for Extension API AuthN
+                    //
                     // If you look in the JWT, PoP Tokens do not have an aud
                     // field, this is only included just for MSAL SDK syntax.
                     // The actual validation of the PoP Token will be done by
                     // Extension API by validating individual PoP specific
                     // fields.
                     //
-                    string[] scopes = new string[] { $"https://localhost/.default" };
-
-                    // Token: PoP Token - for Extension API AuthN
-                    //
-                    AuthenticationResult result = await GetOAuthToken(
+                    AuthenticationResult PopResult = await GetOAuthToken(
                         config,
-                        scopes,
+                        new string[] { $"https://localhost/.default" },
                         true,
                         config.ArceeApiUrl,
                         "GET"
                     );
 
-                    if (result != null)
+                    // Token: PAS Token - for Extension side RBAC
+                    //
+                    AuthenticationResult PasResult = await GetOAuthToken(
+                        config,
+                        new string[] { $"{PasEndpoint}/.default" },
+                        false,
+                        "",
+                        ""
+                    );
+
+                    if (PopResult != null && PasResult != null)
                     {
+                        // Construct PoP + PaS token
+                        //
+                        string popPasToken =
+                            $"{PoPPasTokenTag}POP {PopResult.AccessToken}{";"}PAS {PasResult.AccessToken}";
+
                         // SSL validation - checks the certificate is from our Arc Server
                         //
                         var handler = new HttpClientHandler()
@@ -211,7 +229,7 @@ namespace UserArrP
                             // Send GET request to the API endpoint and get the JSON payload
                             var apiResult = await apiCaller.CallWebApiAndProcessResultASync(
                                 request,
-                                result
+                                popPasToken
                             );
 
                             // Calculate the elapsed time for each API call
@@ -295,9 +313,16 @@ namespace UserArrP
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
             var httpClient = new HttpClient(httpClientHandler);
 
-            // Token: Management Endpoint - for getting Relay Credentials
-            string[] scopes = new string[] { $"{ManagementEndpoint}/.default" };
-            AuthenticationResult result = await GetOAuthToken(config, scopes, false, "", "");
+            // Token: Management Endpoint - for getting Relay Credentials, not
+            // being sent to Extension
+            //
+            AuthenticationResult result = await GetOAuthToken(
+                config,
+                new string[] { $"{ManagementEndpoint}/.default" },
+                false,
+                "",
+                ""
+            );
 
             // Get new Relay Credentials
             string requestUrl = string.Format(

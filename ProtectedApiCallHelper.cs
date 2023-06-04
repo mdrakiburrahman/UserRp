@@ -32,13 +32,13 @@ namespace UserArrP
         /// Calls the protected web API and processes the result
         /// </summary>
         /// <param name="request">Request Object</param>
-        /// <param name="processResult">Callback used to process the result of the call to the web API.</param>
+        /// <param name="token">Pre-formatted header token</param>
         public async Task<JsonNode> CallWebApiAndProcessResultASync(
             HttpRequestMessage request,
-            AuthenticationResult result
+            string token
         )
         {
-            if (result != null)
+            if (token != null)
             {
                 var defaultRequestHeaders = HttpClient.DefaultRequestHeaders;
                 if (
@@ -52,7 +52,7 @@ namespace UserArrP
                 }
                 if (defaultRequestHeaders.Authorization == null)
                 {
-                    defaultRequestHeaders.Add("Authorization", result.CreateAuthorizationHeader());
+                    defaultRequestHeaders.Add("Authorization", token);
                 }
 
                 HttpResponseMessage response = await HttpClient.SendAsync(request);
