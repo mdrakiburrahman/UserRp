@@ -132,8 +132,9 @@ namespace UserArrP
                     //   e.g. "5fa47195-e890-485e-a90c-3d417cfcb1e2/.default"
                     //   
                     string[] scopes = new string[] { $"{config.ArcServerClientId}/.default" };
+                    string path = $"/subscriptions/{config.SubscriptionId}/resourceGroups/{config.ResourceGroup}/providers/Microsoft.AzureArcData/sqlServerInstances/{config.ArcServerName}";
 
-                    AuthenticationResult result = await GetOAuthToken(config, scopes, true, fullUri);
+                    AuthenticationResult result = await GetOAuthToken(config, scopes, true, config.ArceeApiUrl, "GET");
 
                     if (result != null)
                     {
@@ -259,7 +260,7 @@ namespace UserArrP
 
             // Get token against Management Endpoint
             string[] scopes = new string[] { $"{ManagementEndpoint}/.default" };
-            AuthenticationResult result = await GetOAuthToken(config, scopes, false, "");
+            AuthenticationResult result = await GetOAuthToken(config, scopes, false, "", "");
 
             // Get new Relay Credentials
             string requestUrl = string.Format(HybridConnectivityManagementEndpoint, SubscriptionId, ResourceGroup, ArcServerName, HybridConnectivityApiVersion);
@@ -343,17 +344,11 @@ namespace UserArrP
         /// <summary>
         /// Returns a Proof-of-Possesion (PoP) OAuth token for the specified scopes and url.
         /// </summary>
-        private static async Task<AuthenticationResult> GetOAuthToken(AuthenticationConfig config, string[] scopes, bool PoPNeeded, string popUri)
+        private static async Task<AuthenticationResult> GetOAuthToken(AuthenticationConfig config, string[] scopes, bool PoPNeeded, string host, string verb = "")
         {
             // The application is a confidential client application
             //
             IConfidentialClientApplication app;
-
-            app = ConfidentialClientApplicationBuilder.Create(config.ClientId)
-                    .WithClientSecret(config.ClientSecret)
-                    .WithAuthority(new Uri(config.Authority))
-                    .WithExperimentalFeatures() // for PoP
-                    .Build();
 
             app = ConfidentialClientApplicationBuilder.Create(config.ClientId)
                 .WithClientSecret(config.ClientSecret)
@@ -368,14 +363,47 @@ namespace UserArrP
             {
                 if (PoPNeeded)
                 {
+                    PoPAuthenticationConfiguration popConfig = new PoPAuthenticationConfiguration(new Uri(host));
+                    popConfig.Nonce = "nonce";
+
+                    // TODO: Configure other best practices, see:
+                    //
+                    // - https://msazure.visualstudio.com/One/_git/compute-hybridrp?path=/src/Shared/Common/Utilities/AuthenticationClient.cs&version=GBmaster
+                    // - https://msazure.visualstudio.com/One/_git/compute-GuestNotificationServiceDP?path=/src/Microsoft.Arc.Notifications.Common/TokenProvider/PoPTokenProvider.cs&version=GBmaster
+                    //
+
+                    switch (verb.ToUpper())
+                    {
+                        case "GET":
+                            popConfig.HttpMethod = HttpMethod.Get;
+                            break;
+                        case "POST":
+                            popConfig.HttpMethod = HttpMethod.Post;
+                            break;
+                        case "PUT":
+                            popConfig.HttpMethod = HttpMethod.Put;
+                            break;
+                        case "DELETE":
+                            popConfig.HttpMethod = HttpMethod.Delete;
+                            break;
+                        case "PATCH":
+                            popConfig.HttpMethod = HttpMethod.Patch;
+                            break;
+                        default:
+                            popConfig.HttpMethod = HttpMethod.Get;
+                            break;
+                    }   
+                    
                     result = await app.AcquireTokenForClient(scopes)
-                        .WithProofOfPossession(new PoPAuthenticationConfiguration(new Uri(popUri)) { HttpMethod = HttpMethod.Get })
-                        .ExecuteAsync();
+                        .WithProofOfPossession(popConfig)
+                        .ExecuteAsync()
+                        .ConfigureAwait(false);
                 }
                 else
                 {
                     result = await app.AcquireTokenForClient(scopes)
-                        .ExecuteAsync();
+                        .ExecuteAsync()
+                        .ConfigureAwait(false);
                 }
 
                 Console.ForegroundColor = ConsoleColor.Green;
