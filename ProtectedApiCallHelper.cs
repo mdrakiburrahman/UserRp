@@ -63,8 +63,10 @@ namespace UserArrP
                     );
                 }
 
-                if (!defaultRequestHeaders.Contains(popHeader)) defaultRequestHeaders.Add(popHeader, popToken);
-                if (!defaultRequestHeaders.Contains(pasHeader)) defaultRequestHeaders.Add(pasHeader, pasToken);
+                if (!defaultRequestHeaders.Contains(popHeader))
+                    defaultRequestHeaders.Add(popHeader, popToken);
+                if (!defaultRequestHeaders.Contains(pasHeader))
+                    defaultRequestHeaders.Add(pasHeader, pasToken);
 
                 HttpResponseMessage response = await HttpClient.SendAsync(request);
                 if (response.IsSuccessStatusCode)
