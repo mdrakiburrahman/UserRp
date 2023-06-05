@@ -157,7 +157,7 @@ namespace UserArrP
                         config,
                         new string[] { $"https://localhost/.default" },
                         true,
-                        config.ArceeApiUrl,
+                        config.ArceeApiUrl.Replace("https://", ""),
                         queryPath,
                         "GET"
                     );
