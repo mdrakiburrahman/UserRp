@@ -58,6 +58,12 @@ namespace UserArrP
             @"/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.HybridCompute/machines/{2}";
 
         /// <summary>
+        /// Arc SQL Server Instance Resource ID
+        /// </summary>
+        private const string ArcSqlServerResourceId =
+            @"/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.AzureArcData/sqlServerInstances/{2}";
+
+        /// <summary>
         /// SNI Proxy URI
         /// </summary>
         private const string SniProxyEndpoint =
@@ -67,6 +73,11 @@ namespace UserArrP
         /// Management Endpoint
         /// </summary>
         private const string ManagementEndpoint = "https://management.azure.com";
+
+        /// <summary>
+        /// Policy Administration Service Endpoint for AuthZ/RBAC
+        /// </summary>
+        private const string PasEndpoint = "https://pas.windows.net";
 
         /// <summary>
         /// Main entrypoint.
@@ -128,24 +139,38 @@ namespace UserArrP
                     Console.WriteLine($"Expires On: {expiresOn}");
                     Console.WriteLine($"--------------------------------------");
 
-                    // This is basically the Client ID of the specific Arc Server, visible in AAD:
+                    // Token: PoP Token - for Extension API AuthN
                     //
-                    // - https://ms.portal.azure.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview/objectId/c579b537-d28b-491a-98b0-fccd193c2d05/appId/5fa47195-e890-485e-a90c-3d417cfcb1e2
-                    //   e.g. "5fa47195-e890-485e-a90c-3d417cfcb1e2/.default"
+                    // If you look in the JWT, PoP Tokens do not have an aud
+                    // field, this is only included just for MSAL SDK syntax.
+                    // The actual validation of the PoP Token will be done by
+                    // Extension API by validating individual PoP specific
+                    // fields.
                     //
-                    string[] scopes = new string[] { $"{config.ArcServerClientId}/.default" };
-                    string path =
-                        $"/subscriptions/{config.SubscriptionId}/resourceGroups/{config.ResourceGroup}/providers/Microsoft.AzureArcData/sqlServerInstances/{config.ArcServerName}";
-
-                    AuthenticationResult result = await GetOAuthToken(
+                    string queryPath = string.Format(
+                        ArcSqlServerResourceId,
+                        config.SubscriptionId,
+                        config.ResourceGroup,
+                        config.ArcServerName
+                    );
+                    AuthenticationResult PopResult = await GetOAuthToken(
                         config,
-                        scopes,
+                        new string[] { $"https://localhost/.default" },
                         true,
-                        config.ArceeApiUrl,
+                        config.ArceeApiUrl.Replace("https://", ""),
+                        queryPath,
                         "GET"
                     );
 
-                    if (result != null)
+                    // Token: PAS Token - for Extension side RBAC
+                    //
+                    AuthenticationResult PasResult = await GetOAuthToken(
+                        config,
+                        new string[] { $"{PasEndpoint}/.default" },
+                        false
+                    );
+
+                    if (PopResult != null && PasResult != null)
                     {
                         // SSL validation - checks the certificate is from our Arc Server
                         //
@@ -198,14 +223,15 @@ namespace UserArrP
                             // Construct new request object, these cannot be reused
                             var request = new HttpRequestMessage(
                                 HttpMethod.Get,
-                                $"https://localhost:{port}"
+                                $"https://localhost:{port}/{queryPath.TrimStart('/')}"
                             );
                             request.Headers.Host = hostHeader;
 
                             // Send GET request to the API endpoint and get the JSON payload
                             var apiResult = await apiCaller.CallWebApiAndProcessResultASync(
                                 request,
-                                result
+                                PopResult.AccessToken,
+                                PasResult.AccessToken
                             );
 
                             // Calculate the elapsed time for each API call
@@ -289,9 +315,14 @@ namespace UserArrP
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
             var httpClient = new HttpClient(httpClientHandler);
 
-            // Get token against Management Endpoint
-            string[] scopes = new string[] { $"{ManagementEndpoint}/.default" };
-            AuthenticationResult result = await GetOAuthToken(config, scopes, false, "", "");
+            // Token: Management Endpoint - for getting Relay Credentials, not
+            // being sent to Extension
+            //
+            AuthenticationResult result = await GetOAuthToken(
+                config,
+                new string[] { $"{ManagementEndpoint}/.default" },
+                false
+            );
 
             // Get new Relay Credentials
             string requestUrl = string.Format(
@@ -382,13 +413,17 @@ namespace UserArrP
         }
 
         /// <summary>
-        /// Returns a Proof-of-Possesion (PoP) OAuth token for the specified scopes and url.
+        /// Returns a Proof-of-Possesion (PoP) OAuth token for the specified
+        /// scopes, host, path and verb. The Server can ensure that the token
+        /// was issued for the specific request by validating the JWT payload of
+        /// the PoP token.
         /// </summary>
         private static async Task<AuthenticationResult> GetOAuthToken(
             AuthenticationConfig config,
             string[] scopes,
             bool PoPNeeded,
-            string host,
+            string host = "",
+            string path = "",
             string verb = ""
         )
         {
@@ -410,38 +445,39 @@ namespace UserArrP
             {
                 if (PoPNeeded)
                 {
-                    PoPAuthenticationConfiguration popConfig = new PoPAuthenticationConfiguration(
-                        new Uri(host)
-                    );
-                    popConfig.Nonce = "nonce";
-
-                    // TODO: Configure other best practices, see:
-                    //
-                    // - https://msazure.visualstudio.com/One/_git/compute-hybridrp?path=/src/Shared/Common/Utilities/AuthenticationClient.cs&version=GBmaster
-                    // - https://msazure.visualstudio.com/One/_git/compute-GuestNotificationServiceDP?path=/src/Microsoft.Arc.Notifications.Common/TokenProvider/PoPTokenProvider.cs&version=GBmaster
-                    //
-
+                    HttpMethod httpMethod;
                     switch (verb.ToUpper())
                     {
                         case "GET":
-                            popConfig.HttpMethod = HttpMethod.Get;
+                            httpMethod = HttpMethod.Get;
                             break;
                         case "POST":
-                            popConfig.HttpMethod = HttpMethod.Post;
+                            httpMethod = HttpMethod.Post;
                             break;
                         case "PUT":
-                            popConfig.HttpMethod = HttpMethod.Put;
+                            httpMethod = HttpMethod.Put;
                             break;
                         case "DELETE":
-                            popConfig.HttpMethod = HttpMethod.Delete;
+                            httpMethod = HttpMethod.Delete;
                             break;
                         case "PATCH":
-                            popConfig.HttpMethod = HttpMethod.Patch;
+                            httpMethod = HttpMethod.Patch;
                             break;
                         default:
-                            popConfig.HttpMethod = HttpMethod.Get;
+                            httpMethod = HttpMethod.Get;
                             break;
                     }
+
+                    PoPAuthenticationConfiguration popConfig = new PoPAuthenticationConfiguration(
+                        new Uri(host)
+                    );
+                    popConfig.Nonce = Guid.NewGuid().ToString();
+
+                    // The PoP token will only work for the specified host, path and verb
+                    //
+                    popConfig.HttpHost = host;
+                    popConfig.HttpMethod = httpMethod;
+                    popConfig.HttpPath = path;
 
                     result = await app.AcquireTokenForClient(scopes)
                         .WithProofOfPossession(popConfig)

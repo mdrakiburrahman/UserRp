@@ -18,6 +18,16 @@ namespace UserArrP
     public class ProtectedApiCallHelper
     {
         /// <summary>
+        /// POP Token header
+        /// </summary>
+        private const string popHeader = "Authorization-POP";
+
+        /// <summary>
+        /// PAS Token header
+        /// </summary>
+        private const string pasHeader = "Authorization-PAS";
+
+        /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="httpClient">HttpClient used to call the protected API</param>
@@ -32,13 +42,15 @@ namespace UserArrP
         /// Calls the protected web API and processes the result
         /// </summary>
         /// <param name="request">Request Object</param>
-        /// <param name="processResult">Callback used to process the result of the call to the web API.</param>
+        /// <param name="popToken">Proof of possession token</param>
+        /// <param name="pasToken">Policy Administration Service token</param>
         public async Task<JsonNode> CallWebApiAndProcessResultASync(
             HttpRequestMessage request,
-            AuthenticationResult result
+            string popToken,
+            string pasToken
         )
         {
-            if (result != null)
+            if (popToken != null && pasToken != null)
             {
                 var defaultRequestHeaders = HttpClient.DefaultRequestHeaders;
                 if (
@@ -50,10 +62,11 @@ namespace UserArrP
                         new MediaTypeWithQualityHeaderValue("application/json")
                     );
                 }
-                if (defaultRequestHeaders.Authorization == null)
-                {
-                    defaultRequestHeaders.Add("Authorization", result.CreateAuthorizationHeader());
-                }
+
+                if (!defaultRequestHeaders.Contains(popHeader))
+                    defaultRequestHeaders.Add(popHeader, popToken);
+                if (!defaultRequestHeaders.Contains(pasHeader))
+                    defaultRequestHeaders.Add(pasHeader, pasToken);
 
                 HttpResponseMessage response = await HttpClient.SendAsync(request);
                 if (response.IsSuccessStatusCode)
@@ -68,9 +81,6 @@ namespace UserArrP
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"Failed to call the Web Api: {response.StatusCode}");
                     string content = await response.Content.ReadAsStringAsync();
-
-                    // Note that if you got reponse.Code == 403 and response.content.code == "Authorization_RequestDenied"
-                    // this is because the tenant admin as not granted consent for the application to call the Web API
                     Console.WriteLine($"Content: {content}");
                 }
                 Console.ResetColor();
