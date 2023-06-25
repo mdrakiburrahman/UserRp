@@ -220,6 +220,10 @@ namespace UserArrP
                         //
                         while (true)
                         {
+                            // Log the route we're about to query
+                            //
+                            Console.WriteLine($"Querying ODATA REST API at: /{queryPath.TrimStart('/')}");
+
                             // Construct new request object, these cannot be reused
                             var request = new HttpRequestMessage(
                                 HttpMethod.Get,
