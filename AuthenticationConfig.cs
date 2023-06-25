@@ -44,7 +44,7 @@ namespace UserArrP
         /// <summary>
         /// MSI Client ID of Arc Server
         /// </summary>
-        public string ArcServerClientId { get; set; }
+        public string UserRpClientId { get; set; }
 
         /// <summary>
         /// Location of Arc Server
