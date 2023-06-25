@@ -155,7 +155,7 @@ namespace UserArrP
                     );
                     AuthenticationResult PopResult = await GetOAuthToken(
                         config,
-                        new string[] { $"https://localhost/.default" },
+                        new string[] { $"{config.UserRpClientId}/.default" },
                         true,
                         config.ArceeApiUrl.Replace("https://", ""),
                         queryPath,

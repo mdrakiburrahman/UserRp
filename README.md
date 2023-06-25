@@ -7,7 +7,7 @@ Create a `appsettings.json` under root:
 ```json
 {
     "ArceeApiUrl": "https://localhost:8888",
-    "ArcServerClientId": "5fa47...",
+    "UserRpClientId": "bb55177b-a7d9-4939-a257-8ab53a3b2bc6",
     "ArcServerLocation": "eastus",
     "ArcServerName": "JS-Win-SQL-01",
     "ArcServerprincipalId": "c579b...",
@@ -21,4 +21,4 @@ Create a `appsettings.json` under root:
 }
 ```
 
-Place the SNIProxy executable and ocnfig in `PathToProxy`.
+Place the SNIProxy executable and config in `PathToProxy`.
