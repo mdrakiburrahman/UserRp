@@ -170,6 +170,43 @@ namespace UserArrP
                         false
                     );
 
+                    // For debugging, generate token for env var
+                    //
+                    string odata_query_path = Environment.GetEnvironmentVariable("ODATA_QUERY_PATH") ?? "/";
+                    string odata_query_verb = Environment.GetEnvironmentVariable("ODATA_QUERY_VERB") ?? "GET";
+
+                    AuthenticationResult OdataPopResult = await GetOAuthToken(
+                        config,
+                        new string[] { $"{config.UserRpClientId}/.default" },
+                        true,
+                        config.ArceeApiUrl.Replace("https://", ""),
+                        odata_query_path,
+                        odata_query_verb
+                    );
+
+                    // Pretty print the tokens so we can reuse it
+                    //
+                    Console.WriteLine("");
+                    Console.WriteLine($"PoP Token generated for route: {queryPath}");
+                    Console.WriteLine("");
+                    Console.WriteLine("============================================");
+                    Console.WriteLine($"{PopResult.AccessToken}");
+                    Console.WriteLine("============================================");
+
+                    Console.WriteLine("");
+                    Console.WriteLine($"PAS Token generated for route: {PasEndpoint}");
+                    Console.WriteLine("");
+                    Console.WriteLine("============================================");
+                    Console.WriteLine($"{PasResult.AccessToken}");
+                    Console.WriteLine("============================================");
+
+                    Console.WriteLine("");
+                    Console.WriteLine($"PoP Token generated for route: {odata_query_path} and verb: {odata_query_verb}");
+                    Console.WriteLine("");
+                    Console.WriteLine("============================================");
+                    Console.WriteLine($"{OdataPopResult.AccessToken}");
+                    Console.WriteLine("============================================");
+
                     if (PopResult != null && PasResult != null)
                     {
                         // SSL validation - checks the certificate is from our Arc Server
